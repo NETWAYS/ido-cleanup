@@ -7,11 +7,18 @@ import (
 	flag "github.com/spf13/pflag"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
 )
+
+const readme = `
+Icinga IDO Cleanup
+
+For more details see: https://github.com/NETWAYS/ido-cleanup
+`
 
 var (
 	dbDsn        = "icinga:icinga@/icinga2"
@@ -26,12 +33,13 @@ var (
 )
 
 var defaultAges = map[string]uint{
-	"statehistory":    365,
-	"notifications":   365,
-	"logentries":      365,
-	"downtimehistory": 365,
-	"commenthistory":  365,
-	"eventhandlers":   365,
+	"statehistory":         365,
+	"contactnotifications": 365,
+	"notifications":        365,
+	"logentries":           365,
+	"downtimehistory":      365,
+	"commenthistory":       365,
+	"eventhandlers":        365,
 }
 
 func main() {
@@ -135,6 +143,13 @@ func handleArguments() {
 	flag.BoolVar(&once, "once", false, "Just run once")
 	flag.BoolVar(&noop, "noop", false, "Just check - don't purge")
 	flag.BoolVar(&debug, "debug", false, "Enable debug logging")
+
+	flag.Usage = func() {
+		_, _ = fmt.Fprintf(os.Stderr, "%s\n\n", strings.Trim(readme, "\r\n"))
+		_, _ = fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
+
+		flag.PrintDefaults()
+	}
 
 	for _, table := range knownTables {
 		age := uint(0)
