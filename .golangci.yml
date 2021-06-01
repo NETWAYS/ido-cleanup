@@ -1,0 +1,12 @@
+linters:
+  disable-all: false
+  disable:
+    - gochecknoglobals
+    - nlreturn
+    - gomnd
+    - nakedret
+  presets:
+    - bugs
+    - unused
+    - style
+  fast: false
