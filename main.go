@@ -26,6 +26,7 @@ var (
 	noop         bool
 	debug        bool
 	once         bool
+	printVersion bool
 	interval     = 60 * time.Second
 	fastInterval = 10 * time.Second
 	limit        = 10000
@@ -143,10 +144,11 @@ func handleArguments() {
 	flag.BoolVar(&once, "once", false, "Just run once")
 	flag.BoolVar(&noop, "noop", false, "Just check - don't purge")
 	flag.BoolVar(&debug, "debug", false, "Enable debug logging")
+	flag.BoolVarP(&printVersion, "version", "V", false, "Print version and exit")
 
 	flag.Usage = func() {
-		_, _ = fmt.Fprintf(os.Stderr, "%s\n\n", strings.Trim(readme, "\r\n"))
-		_, _ = fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
+		_, _ = fmt.Fprintf(os.Stdout, "%s\n\n", strings.Trim(readme, "\r\n"))
+		_, _ = fmt.Fprintf(os.Stdout, "Usage of %s:\n", os.Args[0])
 
 		flag.PrintDefaults()
 	}
@@ -164,6 +166,11 @@ func handleArguments() {
 
 	flag.CommandLine.SortFlags = false
 	flag.Parse()
+
+	if printVersion {
+		_, _ = fmt.Fprintf(os.Stdout, "NETWAYS ido-cleanup version %s\n", buildVersion())
+		os.Exit(0)
+	}
 }
 
 func runCleanup(db *sql.DB, instanceID int) (busy bool) {
