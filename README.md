@@ -18,6 +18,22 @@ Currently, only MySQL is supported.
 
 You can download the built binary from [releases](https://github.com/NETWAYS/ido-cleanup/releases).
 
+To run the daemon with systemd see [systemd directory](systemd), and install the files like follows, making sure
+to adjust the files to your needs.
+
+```
+cp netways-ido-cleanup.service /etc/systemd/system/
+cp netways-ido-cleanup.env /etc/icinga2/netways-ido-cleanup
+chown icinga.icinga /etc/icinga2/netways-ido-cleanup
+chmod 640 /etc/icinga2/netways-ido-cleanup
+
+systemctl daemon-reload
+systemctl enable netways-ido-cleanup.service
+systemctl start netways-ido-cleanup.service
+
+systemctl status netways-ido-cleanup.service
+```
+
 ## Usage
 
 ```

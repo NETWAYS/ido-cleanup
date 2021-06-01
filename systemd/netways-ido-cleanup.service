@@ -1,0 +1,14 @@
+[Unit]
+Description=Icinga IDO cleanup
+After=mysql.service mariadb.service
+
+[Service]
+Restart=on-failure
+Type=simple
+EnvironmentFile=/etc/icinga2/netways-ido-cleanup
+User=icinga
+#User=nagios
+ExecStart=/usr/local/bin/netways-ido-cleanup --interval 1m
+
+[Install]
+WantedBy=multi-user.target
