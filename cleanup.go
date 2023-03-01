@@ -69,7 +69,7 @@ func (t Table) OldestTime(db *sql.DB, instanceID int) (ts time.Time, err error) 
 
 // Cleanup purges old entries, filtered by instanceID, any entry older then since, limited by limit.
 func (t Table) Cleanup(db *sql.DB, instanceID int, since time.Time, limit int) (rows int64, err error) {
-	query := fmt.Sprintf("DELETE FROM %s%s WHERE instance_id = ? AND %s < ? LIMIT %d",
+	query := fmt.Sprintf("DELETE FROM %s%s WHERE instance_id = ? AND %s < ? LIMIT %d", //nolint:gosec
 		IcingaPrefix, t.Name, t.TimeColumn, limit)
 
 	// log.Debugf("running query: %s - [%d %s]", query, instanceID, since)

@@ -12,6 +12,8 @@ linters:
     - nakedret
     - nolintlint
     - godot
+    - varnamelen
+    - nonamedreturns
   presets:
     - bugs
     - unused
