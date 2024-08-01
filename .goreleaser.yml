@@ -1,4 +1,5 @@
 # See documentation at https://goreleaser.com
+version: 2
 before:
   hooks:
     - go mod download
@@ -18,11 +19,6 @@ builds:
         -X main.date={{.CommitDate}}
 release:
   github:
-archives:
-  - format: binary
-    replacements:
-      linux: Linux
-      amd64: x86_64
 checksum:
   name_template: 'checksums.txt'
 snapshot:
