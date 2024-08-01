@@ -3,15 +3,14 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	log "github.com/sirupsen/logrus"
-	flag "github.com/spf13/pflag"
 	"os"
 	"os/signal"
 	"strings"
 	"syscall"
 	"time"
 
-	_ "github.com/go-sql-driver/mysql"
+	"github.com/sirupsen/logrus"
+	"github.com/spf13/pflag"
 )
 
 const readme = `
@@ -47,20 +46,20 @@ func main() {
 	handleArguments()
 
 	if debug {
-		log.SetLevel(log.DebugLevel)
+		logrus.SetLevel(logrus.DebugLevel)
 	}
 
-	log.Info("starting ido-cleanup")
+	logrus.Info("starting ido-cleanup")
 
 	// Setup database connection
 	db, err := sql.Open("mysql", dbDsn)
 	if err != nil {
-		log.Fatal(err)
+		logrus.Fatal(err)
 	}
 
 	err = db.Ping()
 	if err != nil {
-		log.Fatal("could not connect to database: ", err)
+		logrus.Fatal("could not connect to database: ", err)
 	}
 
 	db.SetConnMaxLifetime(time.Minute * 15)
@@ -70,7 +69,7 @@ func main() {
 	if err != nil {
 		_ = db.Close()
 
-		log.Fatal(err)
+		logrus.Fatal(err)
 	}
 
 	defer db.Close()
@@ -86,14 +85,14 @@ func main() {
 	currentInterval := interval
 
 	if runCleanup(db, instanceID) {
-		log.WithField("interval", fastInterval).Debug("updating interval")
+		logrus.WithField("interval", fastInterval).Debug("updating interval")
 
 		currentInterval = fastInterval
 	}
 
 	// Stop here when only once is requested
 	if once {
-		log.Info("stopping after one cleanup")
+		logrus.Info("stopping after one cleanup")
 		return
 	}
 
@@ -102,7 +101,7 @@ func main() {
 	go func() {
 		sig := <-interrupt
 
-		log.Info("received signal ", sig)
+		logrus.Info("received signal ", sig)
 		timer.Stop()
 
 		done <- true
@@ -120,14 +119,14 @@ func main() {
 			}
 
 			if currentInterval != nextInterval {
-				log.WithField("interval", nextInterval).Debug("updating interval")
+				logrus.WithField("interval", nextInterval).Debug("updating interval")
 
 				timer.Reset(nextInterval)
 			}
 		}
 	}
 
-	log.Info("stopping ido-cleanup")
+	logrus.Info("stopping ido-cleanup")
 }
 
 func handleArguments() {
@@ -135,22 +134,22 @@ func handleArguments() {
 		dbDsn = v
 	}
 
-	flag.StringVar(&dbDsn, "db", dbDsn, "DB Connecting string (env:DB_DSN)")
-	flag.StringVar(&instance, "instance", instance, "IDO instance name")
-	flag.IntVar(&limit, "limit", limit, "Limit deleting rows in one query")
-	flag.DurationVar(&interval, "interval", interval, "Cleanup every X seconds")
-	flag.DurationVar(&fastInterval, "fast-interval", fastInterval,
+	pflag.StringVar(&dbDsn, "db", dbDsn, "DB Connecting string (env:DB_DSN)")
+	pflag.StringVar(&instance, "instance", instance, "IDO instance name")
+	pflag.IntVar(&limit, "limit", limit, "Limit deleting rows in one query")
+	pflag.DurationVar(&interval, "interval", interval, "Cleanup every X seconds")
+	pflag.DurationVar(&fastInterval, "fast-interval", fastInterval,
 		"Cleanup every X seconds - when more then 2x limit rows to delete")
-	flag.BoolVar(&once, "once", false, "Just run once")
-	flag.BoolVar(&noop, "noop", false, "Just check - don't purge")
-	flag.BoolVar(&debug, "debug", false, "Enable debug logging")
-	flag.BoolVarP(&printVersion, "version", "V", false, "Print version and exit")
+	pflag.BoolVar(&once, "once", false, "Just run once")
+	pflag.BoolVar(&noop, "noop", false, "Just check - don't purge")
+	pflag.BoolVar(&debug, "debug", false, "Enable debug logging")
+	pflag.BoolVarP(&printVersion, "version", "V", false, "Print version and exit")
 
-	flag.Usage = func() {
+	pflag.Usage = func() {
 		_, _ = fmt.Fprintf(os.Stdout, "%s\n\n", strings.Trim(readme, "\r\n"))
 		_, _ = fmt.Fprintf(os.Stdout, "Usage of %s:\n", os.Args[0])
 
-		flag.PrintDefaults()
+		pflag.PrintDefaults()
 	}
 
 	for _, table := range knownTables {
@@ -161,11 +160,11 @@ func handleArguments() {
 
 		ages[table.Name] = &age
 
-		flag.UintVar(ages[table.Name], table.Name, age, "How long to keep entries of "+table.Name+" in days")
+		pflag.UintVar(ages[table.Name], table.Name, age, "How long to keep entries of "+table.Name+" in days")
 	}
 
-	flag.CommandLine.SortFlags = false
-	flag.Parse()
+	pflag.CommandLine.SortFlags = false
+	pflag.Parse()
 
 	if printVersion {
 		_, _ = fmt.Fprintf(os.Stdout, "NETWAYS ido-cleanup version %s\n", buildVersion())
@@ -181,7 +180,7 @@ func runCleanup(db *sql.DB, instanceID int) (busy bool) {
 		}
 
 		start := time.Now()
-		entry := log.WithField("table", table.Name)
+		entry := logrus.WithField("table", table.Name)
 
 		// Look for the time stamp of the oldest entry and log it
 		oldest, err := table.OldestTime(db, instanceID)
@@ -203,7 +202,7 @@ func runCleanup(db *sql.DB, instanceID int) (busy bool) {
 				continue
 			}
 
-			entry.WithFields(log.Fields{
+			entry.WithFields(logrus.Fields{
 				"rows": rows,
 				"took": time.Since(start),
 			}).Info("would delete rows")
@@ -224,7 +223,7 @@ func runCleanup(db *sql.DB, instanceID int) (busy bool) {
 			busy = true
 		}
 
-		entry = entry.WithFields(log.Fields{
+		entry = entry.WithFields(logrus.Fields{
 			"rows": rows,
 			"took": time.Since(start),
 		})
