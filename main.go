@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	_ "github.com/go-sql-driver/mysql" // do not remove this although it looks weird. It adds the mysql db driver
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 )
