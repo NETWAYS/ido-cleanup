@@ -75,7 +75,7 @@ func main() {
 	db.SetConnMaxLifetime(time.Minute * 15)
 
 	// Load instance ID
-	instanceID, err := getInstanceID(db)
+	instanceID, err := getInstanceID(db, instance)
 	if err != nil {
 		_ = db.Close()
 
@@ -161,6 +161,7 @@ func handleArguments() {
 		pflag.PrintDefaults()
 	}
 
+	// knownTables is a slice of Table structs
 	for _, table := range knownTables {
 		age := uint(0)
 		if v, ok := defaultAges[table.Name]; ok {
@@ -249,7 +250,7 @@ func runCleanup(db *sql.DB, instanceID int, logger *slog.Logger) (busy bool) {
 	return
 }
 
-func getInstanceID(db *sql.DB) (id int, err error) {
+func getInstanceID(db *sql.DB, instance string) (id int, err error) {
 	row := db.QueryRow("SELECT instance_id FROM icinga_instances WHERE instance_name = ?", instance)
 
 	err = row.Scan(&id)
