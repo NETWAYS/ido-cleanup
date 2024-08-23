@@ -2,7 +2,6 @@ package main
 
 import "fmt"
 
-// nolint: gochecknoglobals
 var (
 	// These get filled at build time with the proper vaules
 	version = "development"
@@ -10,7 +9,6 @@ var (
 	date    = "latest"
 )
 
-//goland:noinspection GoBoolExpressions
 func buildVersion() string {
 	result := version
 
