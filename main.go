@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"os"
 	"os/signal"
 	"strings"
@@ -10,14 +11,11 @@ import (
 	"time"
 
 	_ "github.com/go-sql-driver/mysql" // do not remove this although it looks weird. It adds the mysql db driver
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 )
 
 const readme = `
 Icinga IDO Cleanup
-
-For more details see: https://github.com/NETWAYS/ido-cleanup
 `
 
 var (
@@ -46,21 +44,32 @@ var defaultAges = map[string]uint{
 func main() {
 	handleArguments()
 
-	if debug {
-		logrus.SetLevel(logrus.DebugLevel)
+	// Default log options
+	opts := &slog.HandlerOptions{
+		Level: slog.LevelInfo,
 	}
 
-	logrus.Info("starting ido-cleanup")
+	if debug {
+		opts.Level = slog.LevelDebug
+	}
+
+	handler := slog.NewTextHandler(os.Stdout, opts)
+	logger := slog.New(handler)
+	slog.SetDefault(logger)
+
+	logger.Info("starting ido-cleanup")
 
 	// Setup database connection
 	db, err := sql.Open("mysql", dbDsn)
 	if err != nil {
-		logrus.Fatal(err)
+		logger.Error("could not connect to database", "error", err)
+		os.Exit(1)
 	}
 
 	err = db.Ping()
 	if err != nil {
-		logrus.Fatal("could not connect to database: ", err)
+		logger.Error("could not connect to database", "error", err)
+		os.Exit(1)
 	}
 
 	db.SetConnMaxLifetime(time.Minute * 15)
@@ -70,7 +79,8 @@ func main() {
 	if err != nil {
 		_ = db.Close()
 
-		logrus.Fatal(err)
+		logger.Error("could not get instance ID", "error", err)
+		os.Exit(1)
 	}
 
 	defer db.Close()
@@ -85,15 +95,14 @@ func main() {
 	// Start initial cleanup and prepare timer
 	currentInterval := interval
 
-	if runCleanup(db, instanceID) {
-		logrus.WithField("interval", fastInterval).Debug("updating interval")
-
+	if runCleanup(db, instanceID, logger) {
+		logger.Debug("updating interval", "interval", fastInterval)
 		currentInterval = fastInterval
 	}
 
 	// Stop here when only once is requested
 	if once {
-		logrus.Info("stopping after one cleanup")
+		logger.Info("stopping after one cleanup")
 		return
 	}
 
@@ -102,7 +111,7 @@ func main() {
 	go func() {
 		sig := <-interrupt
 
-		logrus.Info("received signal ", sig)
+		logger.Info("received signal", "signal", sig)
 		timer.Stop()
 
 		done <- true
@@ -115,19 +124,18 @@ func main() {
 		case <-timer.C:
 			nextInterval := interval
 
-			if runCleanup(db, instanceID) {
+			if runCleanup(db, instanceID, logger) {
 				nextInterval = fastInterval
 			}
 
 			if currentInterval != nextInterval {
-				logrus.WithField("interval", nextInterval).Debug("updating interval")
-
+				logger.Debug("updating interval", "interval", nextInterval)
 				timer.Reset(nextInterval)
 			}
 		}
 	}
 
-	logrus.Info("stopping ido-cleanup")
+	logger.Info("stopping ido-cleanup")
 }
 
 func handleArguments() {
@@ -173,7 +181,7 @@ func handleArguments() {
 	}
 }
 
-func runCleanup(db *sql.DB, instanceID int) (busy bool) {
+func runCleanup(db *sql.DB, instanceID int, logger *slog.Logger) (busy bool) {
 	for _, table := range knownTables {
 		age, set := ages[table.Name]
 		if !set || *age == 0 {
@@ -181,14 +189,11 @@ func runCleanup(db *sql.DB, instanceID int) (busy bool) {
 		}
 
 		start := time.Now()
-		entry := logrus.WithField("table", table.Name)
 
 		// Look for the time stamp of the oldest entry and log it
 		oldest, err := table.OldestTime(db, instanceID)
 		if err != nil {
-			entry.Error(err)
-		} else if !oldest.IsZero() {
-			entry = entry.WithField("oldest", oldest)
+			logger.Error("could not get entry", "error", err, "table", table.Name)
 		}
 
 		// Until when we want to delete
@@ -198,15 +203,16 @@ func runCleanup(db *sql.DB, instanceID int) (busy bool) {
 		if noop {
 			rows, err := table.Count(db, instanceID, deleteSince)
 			if err != nil {
-				entry.Error(err)
-
+				logger.Error("could not enumerate rows", "error", err, "table", table.Name, "oldest", oldest)
 				continue
 			}
 
-			entry.WithFields(logrus.Fields{
-				"rows": rows,
-				"took": time.Since(start),
-			}).Info("would delete rows")
+			logger.Info("would delete rows",
+				"table", table.Name,
+				"oldest", oldest,
+				"rows", rows,
+				"took", time.Since(start),
+			)
 
 			continue
 		}
@@ -214,8 +220,7 @@ func runCleanup(db *sql.DB, instanceID int) (busy bool) {
 		// Run the cleanup
 		rows, err := table.Cleanup(db, instanceID, deleteSince, limit)
 		if err != nil {
-			entry.Error(err)
-
+			logger.Error("could run cleanup", "error", err, "table", table.Name)
 			continue
 		}
 
@@ -224,15 +229,20 @@ func runCleanup(db *sql.DB, instanceID int) (busy bool) {
 			busy = true
 		}
 
-		entry = entry.WithFields(logrus.Fields{
-			"rows": rows,
-			"took": time.Since(start),
-		})
-
 		if rows > 0 {
-			entry.Info("deleted rows")
+			logger.Info("deleted rows",
+				"table", table.Name,
+				"oldest", oldest,
+				"rows", rows,
+				"took", time.Since(start),
+			)
 		} else {
-			entry.Debug("deleted rows")
+			logger.Debug("deleted rows",
+				"table", table.Name,
+				"oldest", oldest,
+				"rows", rows,
+				"took", time.Since(start),
+			)
 		}
 	}
 
