@@ -3,7 +3,7 @@
 In larger installations of Icinga 2, [IDO DB cleanup] can become a challenge. Those cleanup queries are scheduled in
 between any other INSERT or UPDATE query.
 
-This can cause 2 problems:
+This can cause two problems:
 - Regular updates are deferred when cleanup is running
 - Not all tables are indexed correctly, so cleanup can take longer
 
@@ -72,19 +72,19 @@ Usage of ido-cleanup:
 
 ```
 $ ido-cleanup --once
-INFO[0000] starting ido-cleanup                         
+INFO[0000] starting ido-cleanup
 INFO[0000] deleted rows  oldest="2019-03-01 11:26:44 +0000 UTC" rows=10000 table=commenthistory took=72.647379ms
 INFO[0000] deleted rows  oldest="2019-01-21 19:35:14 +0000 UTC" rows=6129 table=contactnotifications took=76.247963ms
 INFO[0000] deleted rows  oldest="2019-02-06 09:42:08 +0000 UTC" rows=209 table=downtimehistory took=3.992535ms
 INFO[0000] deleted rows  oldest="2019-04-23 07:29:36 +0000 UTC" rows=60 table=eventhandlers took=6.685573ms
 INFO[0000] deleted rows  oldest="2019-01-21 19:35:14 +0000 UTC" rows=6212 table=notifications took=84.653149ms
 INFO[0000] deleted rows  oldest="2019-01-20 10:16:30 +0000 UTC" rows=10000 table=statehistory took=135.619702ms
-INFO[0000] stopping after one cleanup       
+INFO[0000] stopping after one cleanup
 ```
 
 ## Missing indices
 
-Not all tables are indexed in a way to support fast deletions. 
+Not all tables are indexed in a way to support fast deletions.
 
 Please add those indexes to ensure speedy queries.
 
@@ -95,19 +95,9 @@ CREATE INDEX idx_contactnotifications_cleanup on icinga_contactnotifications (in
 
 See [Icinga/icinga2#7753](https://github.com/Icinga/icinga2/issues/7753).
 
-## License
+# License
 
 Copyright (C) 2021 [NETWAYS GmbH](mailto:info@netways.de)
 
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <https://www.gnu.org/licenses/>.
+This library is distributed under the GPL-3.0 license found in the [LICENSE](./LICENSE)
+file.
