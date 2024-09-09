@@ -1,3 +1,16 @@
+# Editors
+/.idea/
+[._]*.sw[a-p]
+*~
+\#*
+.\#*
+
+# Test files
+*.crt
+*.out
+*.profile
+coverage.html
+
 /dist/
 *.sql*
 /ido-cleanup
