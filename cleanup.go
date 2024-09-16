@@ -40,8 +40,6 @@ func (t Table) OldestTime(db *sql.DB, instanceID int) (ts time.Time, err error) 
 	query := fmt.Sprintf("SELECT %s FROM %s%s WHERE instance_id = ? ORDER BY %s ASC LIMIT 1", //nolint:gosec
 		t.TimeColumn, IcingaPrefix, t.Name, t.TimeColumn)
 
-	// log.Debugf("running query: %s - [%d]", query, instanceID)
-
 	row := db.QueryRow(query, instanceID)
 
 	var tsString string
@@ -72,8 +70,6 @@ func (t Table) Cleanup(db *sql.DB, instanceID int, since time.Time, limit int) (
 	query := fmt.Sprintf("DELETE FROM %s%s WHERE instance_id = ? AND %s < ? LIMIT %d", //nolint:gosec
 		IcingaPrefix, t.Name, t.TimeColumn, limit)
 
-	// log.Debugf("running query: %s - [%d %s]", query, instanceID, since)
-
 	result, err := db.Exec(query, instanceID, since)
 	if err != nil {
 		err = fmt.Errorf("could not purge rows for %s: %w", t.Name, err)
@@ -87,8 +83,6 @@ func (t Table) Cleanup(db *sql.DB, instanceID int, since time.Time, limit int) (
 func (t Table) Count(db *sql.DB, instanceID int, since time.Time) (rows int64, err error) {
 	query := fmt.Sprintf("SELECT count(*) FROM %s%s WHERE instance_id = ? AND %s < ?", //nolint:gosec
 		IcingaPrefix, t.Name, t.TimeColumn)
-
-	// log.Debugf("running query: %s - [%d %s]", query, instanceID, since)
 
 	row := db.QueryRow(query, instanceID, since)
 
