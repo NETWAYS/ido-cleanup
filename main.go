@@ -202,6 +202,7 @@ func runCleanup(db *sql.DB, instanceID int, logger *slog.Logger) (busy bool) {
 		if *age > math.MaxInt {
 			logger.Error("age is limit to MaxInt", "error", err, "age", *age)
 		}
+
 		deleteSince := time.Now().AddDate(0, 0, -int(*age)) //nolint: gosec
 
 		// Only count?
