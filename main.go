@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log/slog"
+	"math"
 	"os"
 	"os/signal"
 	"strings"
@@ -198,7 +199,10 @@ func runCleanup(db *sql.DB, instanceID int, logger *slog.Logger) (busy bool) {
 		}
 
 		// Until when we want to delete
-		deleteSince := time.Now().AddDate(0, 0, -int(*age))
+		if *age > math.MaxInt {
+			logger.Error("age is limit to MaxInt", "error", err, "age", *age)
+		}
+		deleteSince := time.Now().AddDate(0, 0, -int(*age)) //nolint: gosec
 
 		// Only count?
 		if noop {
