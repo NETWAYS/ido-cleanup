@@ -28,8 +28,3 @@ linters:
      - varnamelen
      - wrapcheck
      - funlen
-linters-settings:
-   estif:
-     min-complexity: 4
-   maligned:
-     suggest-new: true
